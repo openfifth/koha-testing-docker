@@ -5,7 +5,7 @@ LABEL maintainer="tomascohen@theke.io"
 
 ENV PATH=/usr/bin:/bin:/usr/sbin:/sbin
 ENV DEBIAN_FRONTEND=noninteractive
-ENV REFRESHED_AT=2025-09-19
+ENV REFRESHED_AT=2025-12-11
 
 # Copy package management scripts
 COPY files/install-packages /usr/local/bin/
@@ -45,10 +45,10 @@ RUN a2enmod rewrite \
             cgi
 
 # Add Koha development repositories
-RUN curl -s http://debian.koha-community.org/koha/gpg.asc | \
+RUN curl -s https://debian.koha-community.org/koha/gpg.asc | \
         gpg --dearmor -o /etc/apt/trusted.gpg.d/koha.gpg && \
     chmod 644 /etc/apt/trusted.gpg.d/koha.gpg && \
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/koha.gpg] http://debian.koha-community.org/koha-staging dev main" >> /etc/apt/sources.list.d/koha.list
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/koha.gpg] https://debian.koha-community.org/koha 25.11 main" >> /etc/apt/sources.list.d/koha.list
 
 # Install koha-common
 RUN apt-get -y update \
