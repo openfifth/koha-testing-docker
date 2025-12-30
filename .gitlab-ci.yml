@@ -5,60 +5,210 @@ services:
 
 stages:
   - build
+  - manifest
 
 variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_DRIVER: overlay2
   FF_NETWORK_PER_BUILD: 1
+  # Change this to make a different distro the default '22.11' tag
+  DEFAULT_DISTRO: bookworm
 
-bookworm:
-  stage: build
-  script:
-  - docker build -t koha/koha-testing:22.11-bookworm --no-cache --rm -f dists/bookworm/Dockerfile .
+before_script:
+  - echo "$GITLAB_REGISTRY_TOKEN" | docker login -u "$GITLAB_REGISTRY_USER" --password-stdin $CI_REGISTRY
   - echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" --password-stdin
-  - docker push koha/koha-testing:22.11-bookworm
-  - docker image rm koha/koha-testing:22.11-bookworm
+
+# AMD64 builds - push to GitLab registry
+.build-amd64:
+  stage: build
+  tags: [saas-linux-medium-amd64]
+  script:
+    - docker build --platform linux/amd64 
+      --tag $CI_REGISTRY_IMAGE:${CI_JOB_NAME}-amd64
+      --file dists/${CI_JOB_NAME}/Dockerfile
+      --push .
   only:
     - 22.11@koha-community/koha-testing-docker
 
-bullseye:
+# ARM64 builds - push to GitLab registry
+.build-arm64:
   stage: build
+  tags: [saas-linux-medium-arm64]
   script:
-  - docker build -t koha/koha-testing:22.11-bullseye --no-cache --rm -f dists/bullseye/Dockerfile .
-  - echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" --password-stdin
-  - docker push koha/koha-testing:22.11-bullseye
-  - docker tag  koha/koha-testing:22.11-bullseye koha/koha-testing:22.11
-  - docker push koha/koha-testing:22.11
-  - docker image rm koha/koha-testing:22.11-bullseye
+    - docker build --platform linux/arm64/v8
+      --tag $CI_REGISTRY_IMAGE:${CI_JOB_NAME}-arm64
+      --file dists/${CI_JOB_NAME}/Dockerfile
+      --push .
   only:
     - 22.11@koha-community/koha-testing-docker
 
-focal:
-  stage: build
+# Manifest creation - pull, push temp tags, create manifest, cleanup
+.create-manifest:
+  stage: manifest
+  image: docker:latest
+  services:
+    - docker:dind
   script:
-  - docker build -t koha/koha-testing:22.11-focal --no-cache --rm -f dists/focal/Dockerfile .
-  - echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" --password-stdin
-  - docker push koha/koha-testing:22.11-focal
-  - docker image rm koha/koha-testing:22.11-focal
+    # Pull from GitLab
+    - docker pull $CI_REGISTRY_IMAGE:${CI_JOB_NAME}-amd64
+    - docker pull $CI_REGISTRY_IMAGE:${CI_JOB_NAME}-arm64
+    
+    # Retag for Docker Hub  
+    - docker tag $CI_REGISTRY_IMAGE:${CI_JOB_NAME}-amd64 koha/koha-testing:temp-${CI_JOB_NAME}-amd64-${CI_PIPELINE_ID}
+    - docker tag $CI_REGISTRY_IMAGE:${CI_JOB_NAME}-arm64 koha/koha-testing:temp-${CI_JOB_NAME}-arm64-${CI_PIPELINE_ID}
+    
+    # Push to Docker Hub
+    - docker push koha/koha-testing:temp-${CI_JOB_NAME}-amd64-${CI_PIPELINE_ID}
+    - docker push koha/koha-testing:temp-${CI_JOB_NAME}-arm64-${CI_PIPELINE_ID}
+    
+    # Create manifest
+    - docker manifest create koha/koha-testing:${CI_COMMIT_REF_NAME}-${CI_JOB_NAME}
+        koha/koha-testing:temp-${CI_JOB_NAME}-amd64-${CI_PIPELINE_ID}
+        koha/koha-testing:temp-${CI_JOB_NAME}-arm64-${CI_PIPELINE_ID}
+    - docker manifest push koha/koha-testing:${CI_COMMIT_REF_NAME}-${CI_JOB_NAME}
+    
+    # Create branch alias if this is the default distro (e.g., '22.11' for 22.11-bookworm)
+    - |
+      if [ "${CI_JOB_NAME}" = "${DEFAULT_DISTRO}" ]; then
+        docker manifest create koha/koha-testing:${CI_COMMIT_REF_NAME} \
+          koha/koha-testing:temp-${CI_JOB_NAME}-amd64-${CI_PIPELINE_ID} \
+          koha/koha-testing:temp-${CI_JOB_NAME}-arm64-${CI_PIPELINE_ID}
+        docker manifest push koha/koha-testing:${CI_COMMIT_REF_NAME}
+      fi
+
+    # Clean up temp tags
+    - docker run --rm lumir/remove-dockerhub-tag
+        --user $REGISTRY_USER --password $REGISTRY_PASSWORD
+        koha/koha-testing:temp-${CI_JOB_NAME}-amd64-${CI_PIPELINE_ID} || true
+    - docker run --rm lumir/remove-dockerhub-tag
+        --user $REGISTRY_USER --password $REGISTRY_PASSWORD
+        koha/koha-testing:temp-${CI_JOB_NAME}-arm64-${CI_PIPELINE_ID} || true
   only:
     - 22.11@koha-community/koha-testing-docker
 
-jammy:
-  stage: build
-  script:
-  - docker build -t koha/koha-testing:22.11-jammy --no-cache --rm -f dists/jammy/Dockerfile .
-  - echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" --password-stdin
-  - docker push koha/koha-testing:22.11-jammy
-  - docker image rm koha/koha-testing:22.11-jammy
-  only:
-    - 22.11@koha-community/koha-testing-docker
+trixie-amd64:
+  extends: .build-amd64
+  variables:
+    CI_JOB_NAME: trixie
 
-noble:
-  stage: build
-  script:
-  - docker build -t koha/koha-testing:22.11-noble --no-cache --rm -f dists/noble/Dockerfile .
-  - echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" --password-stdin
-  - docker push koha/koha-testing:22.11-noble
-  - docker image rm koha/koha-testing:22.11-noble
-  only:
-    - 22.11@koha-community/koha-testing-docker
+trixie-arm64:
+  extends: .build-arm64
+  variables:
+    CI_JOB_NAME: trixie
+
+trixie-manifest:
+  extends: .create-manifest
+  variables:
+    CI_JOB_NAME: trixie
+  needs:
+    - trixie-amd64
+    - trixie-arm64
+
+bookworm-amd64:
+  extends: .build-amd64
+  variables:
+    CI_JOB_NAME: bookworm
+
+bookworm-arm64:
+  extends: .build-arm64
+  variables:
+    CI_JOB_NAME: bookworm
+
+bookworm-manifest:
+  extends: .create-manifest
+  variables:
+    CI_JOB_NAME: bookworm
+  needs:
+    - bookworm-amd64
+    - bookworm-arm64
+
+bullseye-amd64:
+  extends: .build-amd64
+  variables:
+    CI_JOB_NAME: bullseye
+
+bullseye-arm64:
+  extends: .build-arm64
+  variables:
+    CI_JOB_NAME: bullseye
+
+bullseye-manifest:
+  extends: .create-manifest
+  variables:
+    CI_JOB_NAME: bullseye
+  needs:
+    - bullseye-amd64
+    - bullseye-arm64
+
+noble-amd64:
+  extends: .build-amd64
+  variables:
+    CI_JOB_NAME: noble
+
+noble-arm64:
+  extends: .build-arm64
+  variables:
+    CI_JOB_NAME: noble
+
+noble-manifest:
+  extends: .create-manifest
+  variables:
+    CI_JOB_NAME: noble
+  needs:
+    - noble-amd64
+    - noble-arm64
+
+jammy-amd64:
+  extends: .build-amd64
+  variables:
+    CI_JOB_NAME: jammy
+
+jammy-arm64:
+  extends: .build-arm64
+  variables:
+    CI_JOB_NAME: jammy
+
+jammy-manifest:
+  extends: .create-manifest
+  variables:
+    CI_JOB_NAME: jammy
+  needs:
+    - jammy-amd64
+    - jammy-arm64
+
+focal-amd64:
+  extends: .build-amd64
+  variables:
+    CI_JOB_NAME: focal
+
+focal-arm64:
+  extends: .build-arm64
+  variables:
+    CI_JOB_NAME: focal
+
+focal-manifest:
+  extends: .create-manifest
+  variables:
+    CI_JOB_NAME: focal
+  needs:
+    - focal-amd64
+    - focal-arm64
+
+## Restore once we remove Cypress
+# sid-amd64:
+#   extends: .build-amd64
+#   variables:
+#     CI_JOB_NAME: sid
+
+# sid-arm64:
+#   extends: .build-arm64
+#   variables:
+#     CI_JOB_NAME: sid
+
+# sid-manifest:
+#   extends: .create-manifest
+#   variables:
+#     CI_JOB_NAME: sid
+#   needs:
+#     - sid-amd64
+#     - sid-arm64
