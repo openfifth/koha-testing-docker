@@ -86,24 +86,6 @@ before_script:
   only:
     - 22.11@koha-community/koha-testing-docker
 
-trixie-amd64:
-  extends: .build-amd64
-  variables:
-    CI_JOB_NAME: trixie
-
-trixie-arm64:
-  extends: .build-arm64
-  variables:
-    CI_JOB_NAME: trixie
-
-trixie-manifest:
-  extends: .create-manifest
-  variables:
-    CI_JOB_NAME: trixie
-  needs:
-    - trixie-amd64
-    - trixie-arm64
-
 bookworm-amd64:
   extends: .build-amd64
   variables:
