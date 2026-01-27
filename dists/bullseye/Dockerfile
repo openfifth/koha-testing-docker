@@ -48,7 +48,8 @@ RUN a2enmod rewrite \
 RUN curl -s https://debian.koha-community.org/koha/gpg.asc | \
         gpg --dearmor -o /etc/apt/trusted.gpg.d/koha.gpg && \
     chmod 644 /etc/apt/trusted.gpg.d/koha.gpg && \
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/koha.gpg] https://debian.koha-community.org/koha 25.11 main" >> /etc/apt/sources.list.d/koha.list
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/koha.gpg] https://debian.koha-community.org/koha 25.11 main" >> /etc/apt/sources.list.d/koha.list && \
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/koha.gpg] https://debian.koha-community.org/koha-testing 25.11 main" >> /etc/apt/sources.list.d/koha.list
 
 # Install koha-common
 RUN apt-get -y update \
