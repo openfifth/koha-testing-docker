@@ -114,7 +114,7 @@ RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.lis
    && wget -O- -q https://dl.yarnpkg.com/debian/pubkey.gpg \
       | gpg --dearmor \
       | tee /usr/share/keyrings/yarnkey.gpg >/dev/null \
-   && echo "deb [signed-by=/usr/share/keyrings/yarnkey.gpg] https://dl.yarnpkg.com/debian stable main" | tee /etc/apt/sources.list.d/yarn.list
+   && echo "deb [trusted=yes] https://dl.yarnpkg.com/debian stable main" | tee /etc/apt/sources.list.d/yarn.list
 
 # Install Node.js and Yarn
 RUN apt-get update \
