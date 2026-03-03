@@ -286,6 +286,7 @@ service koha-common start
 service apache2 start
 service rabbitmq-server start || true # Don't crash if rabbitmq-server didn't start
 
+touch /ktd_ready
 echo "koha-testing-docker has started up and is ready to be enjoyed!"
 
 # if KOHA_PROVE_CPUS is not set, then use nproc
