@@ -85,7 +85,7 @@ sudo service --status-all
 # Clone before calling cp_debian_files.pl
 if [ "${DEBUG_GIT_REPO_MISC4DEV}" = "yes" ]; then
     rm -rf ${BUILD_DIR}/misc4dev
-    git clone -b ${DEBUG_GIT_REPO_MISC4DEV_BRANCH} ${DEBUG_GIT_REPO_MISC4DEV_URL} ${BUILD_DIR}/misc4dev
+    git clone -v -b ${DEBUG_GIT_REPO_MISC4DEV_BRANCH} ${DEBUG_GIT_REPO_MISC4DEV_URL} ${BUILD_DIR}/misc4dev
 fi
 
 # Make sure we use the files from the git clone for creating the instance
@@ -160,7 +160,7 @@ if [[ ${SKIP_L10N} != "yes" ]]; then
 
     if [ ! -d "$BUILD_DIR/koha/misc/translator/po" ]; then
         echo "Cloning koha-l10n into misc/translator/po"
-        git clone --branch ${l10n_branch} https://gitlab.com/koha-community/koha-l10n.git $BUILD_DIR/koha/misc/translator/po
+        git clone -v --branch ${l10n_branch} https://gitlab.com/koha-community/koha-l10n.git $BUILD_DIR/koha/misc/translator/po
     elif [ -d "$BUILD_DIR/koha/misc/translator/po/.git" ]; then
         echo "Fetching koha-l10n"
         git config --global --add safe.directory $BUILD_DIR/koha/misc/translator/po
@@ -253,7 +253,7 @@ envsubst "$VARS_TO_SUB" < ${BUILD_DIR}/templates/bash_aliases    > /var/lib/koha
 
 if [ "${DEBUG_GIT_REPO_QATESTTOOLS}" = "yes" ]; then
     rm -rf ${BUILD_DIR}/qa-test-tools
-    git clone -b ${DEBUG_GIT_REPO_QATESTTOOLS_BRANCH} ${DEBUG_GIT_REPO_QATESTTOOLS_URL} ${BUILD_DIR}/qa-test-tools
+    git clone -v -b ${DEBUG_GIT_REPO_QATESTTOOLS_BRANCH} ${DEBUG_GIT_REPO_QATESTTOOLS_URL} ${BUILD_DIR}/qa-test-tools
 fi
 
 if [ "${KOHA_ELASTICSEARCH}" = "yes" ]; then
