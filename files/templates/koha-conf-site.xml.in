@@ -491,7 +491,7 @@ __END_SRU_PUBLICSERVER__
  <content_security_policy>
    <opac>
      <!-- supported values: report-only, enabled. Any other value, including unset, disables the feature. -->
-     <csp_mode>report-only</csp_mode>
+     <csp_mode>enabled</csp_mode>
      <!-- defines the value of the CSP header. _CSP_NONCE_ can be used as a placeholder for the generated CSP nonce. -->
      <csp_header_value></csp_header_value>
    </opac>
