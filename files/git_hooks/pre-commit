@@ -9,7 +9,6 @@ use Term::ANSIColor qw(colored);
 $ENV{LOG} = "test";
 
 my $nb_errors = 0;
-my @compiled_css = ( "staff-global", "opac" );
 my $tidy_commands;
 
 my $in_container = -f '/.dockerenv';
@@ -20,11 +19,6 @@ for my $filepath (`git diff --cached --name-only`) {
 
     my @file_infos = fileparse( $filepath, qr/\.[^.]*/ );
     my $file_ext = $file_infos[2];
-
-    if ( grep( $file_infos[0], @compiled_css ) && $file_ext eq ".css" ) {
-        say colored( "You don't want to commit $filepath", 'red' );
-        $nb_errors++;
-    }
 
     if ( $file_ext =~ /^\.(pl|PL|pm)$/ ) {
         system( perl_valid_cmd($filepath) ) == 0
