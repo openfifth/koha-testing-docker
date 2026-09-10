@@ -96,9 +96,36 @@ sub install_cpan_modules {
     }
 }
 
+sub install_koha_qa {
+
+    # Koha::QA is on CPAN but a plain `cpanm Koha::QA` never runs its custom `make js-deps` Makefile target
+    # => Build from source instead
+    say "Installing Koha::QA from source (for js-deps)";
+
+    my $workdir = '/kohadevbox';
+    my $srcdir  = "$workdir/koha-qa";
+
+    system( 'cpanm', '--notest', 'File::ShareDir::Install', 'Module::CPANfile' ) == 0
+      or die "cpanm failed to install Koha::QA build prereqs: $!";
+
+    system( 'git', 'clone', '--depth', '1', 'https://gitlab.com/joubu/koha-qa.git', $srcdir ) == 0
+      or die "git clone of koha-qa failed: $!";
+
+    chdir $srcdir or die "Unable to chdir to $srcdir: $!";
+
+    system( 'cpanm', '--notest', '--installdeps', '.' ) == 0  or die "cpanm --installdeps failed for koha-qa: $!";
+    system( 'perl', 'Makefile.PL' ) == 0                      or die "perl Makefile.PL failed for koha-qa: $!";
+    system( 'make', 'js-deps' ) == 0                          or die "make js-deps failed for koha-qa: $!";
+    system( 'make' ) == 0                                     or die "make failed for koha-qa: $!";
+    system( 'make', 'install' ) == 0                          or die "make install failed for koha-qa: $!";
+
+    chdir $workdir or die "Unable to chdir to $workdir: $!";
+    system( 'rm', '-rf', $srcdir );
+}
+
 sub usage {
     return <<EOF;
-Usage: $0 <base|koha-dev|nodejs|utility|cypress|temp|cpan|all> [os_version]
+Usage: $0 <base|koha-dev|nodejs|utility|cypress|temp|cpan|koha-qa|all> [os_version]
 Available package sets:
   base     - Base development packages
   koha-dev - Koha-specific development packages
@@ -107,6 +134,7 @@ Available package sets:
   cypress  - Cypress testing packages
   temp     - Temporary packages for development
   cpan     - CPAN modules
+  koha-qa  - Koha::QA, built from source (for js-deps)
   all      - All package sets
 
 Detected OS version: $os_version
@@ -120,6 +148,8 @@ if ( $package_set eq 'cpan' ) {
     } else {
         say "No modules found for set '$package_set' and OS '$os_version' - skipping";
     }
+} elsif ( $package_set eq 'koha-qa' ) {
+    install_koha_qa();
 } elsif ( $package_set eq 'all' ) {
     for my $set (qw(base koha-dev nodejs utility cypress temp)) {
         my @packages = get_packages( $set, $os_version );
@@ -129,6 +159,8 @@ if ( $package_set eq 'cpan' ) {
     # Handle CPAN separately
     my @modules = get_packages( 'cpan', $os_version );
     install_cpan_modules( 'cpan', @modules ) if @modules;
+
+    install_koha_qa();
 } elsif ( $package_set =~ /^(base|koha-dev|nodejs|utility|cypress|temp)$/ ) {
     my @packages = get_packages( $package_set, $os_version );
     if (@packages) {

@@ -109,6 +109,9 @@ RUN cd /kohadevbox \
     && cd perl-git-bz && cpanm --installdeps . \
     && ln -s /kohadevbox/perl-git-bz/bin/git-bz /usr/bin/git-bz
 
+# Install Koha::QA from source (js-deps needs a source build; see install-packages)
+RUN /usr/local/bin/install-packages koha-qa
+
 # Clone helper repositories
 RUN cd /kohadevbox \
     && git clone https://gitlab.com/koha-community/koha-misc4dev.git   misc4dev \
