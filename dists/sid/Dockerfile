@@ -50,7 +50,7 @@ RUN curl -s http://debian.koha-community.org/koha/gpg.asc | \
     chmod 644 /etc/apt/trusted.gpg.d/koha.gpg && \
     echo "deb [signed-by=/etc/apt/trusted.gpg.d/koha.gpg] http://debian.koha-community.org/koha-staging dev main" >> /etc/apt/sources.list.d/koha.list
 
-# Install koha-common
+# Install koha-common (with koha-sysv chosen over the default koha-systemd alternative)
 RUN apt-get -y update \
     && apt-cache policy koha-sysv \
     && apt-cache policy koha-core \
@@ -59,7 +59,7 @@ RUN apt-get -y update \
     && apt-cache policy libmojolicious-plugin-openapi-perl \
     && apt-cache policy libyaml-libyaml-perl \
     && apt-get -y install \
-    koha-sysv koha-core \
+    koha-common koha-sysv koha-core \
     && /etc/init.d/koha-common stop \
     && rm -rf /var/cache/apt/archives/* \
     && rm -rf /var/lib/apt/lists/* \
