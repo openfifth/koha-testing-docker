@@ -52,13 +52,14 @@ RUN curl -s http://debian.koha-community.org/koha/gpg.asc | \
 
 # Install koha-common
 RUN apt-get -y update \
-    && apt-cache policy koha-common \
+    && apt-cache policy koha-sysv \
+    && apt-cache policy koha-core \
     && apt-cache policy libmojolicious-perl \
     && apt-cache policy libjson-validator-perl \
     && apt-cache policy libmojolicious-plugin-openapi-perl \
     && apt-cache policy libyaml-libyaml-perl \
     && apt-get -y install \
-    koha-common \
+    koha-sysv koha-core \
     && /etc/init.d/koha-common stop \
     && rm -rf /var/cache/apt/archives/* \
     && rm -rf /var/lib/apt/lists/* \
