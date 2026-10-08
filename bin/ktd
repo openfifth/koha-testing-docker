@@ -581,7 +581,7 @@ if [ "$SHELL_ACCESS" != "no" ]; then
     fi
 
 elif [ "$DBSHELL_ACCESS" != "no" ]; then
-    "$DOCKER_BINARY" exec -it ${PROJECT_NAME}-db-1 mysql -u koha_kohadev -ppassword koha_kohadev
+    "$DOCKER_BINARY" exec -it ${PROJECT_NAME}-db-1 $ENABLED_DB_ENGINE -u koha_kohadev -ppassword koha_kohadev
 elif [ "$FOLLOW_LOGS" != "no" ]; then
 
     "$DOCKER_BINARY" logs -f ${PROJECT_NAME}-koha-1
